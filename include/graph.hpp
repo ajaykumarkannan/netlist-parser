@@ -1,3 +1,6 @@
+#define STRDEF
+#include <string>
+
 // This class is for a generic component. It is abstract.
 typedef float gParam;			
 /* The parameters are to be of the this form. 
@@ -15,6 +18,9 @@ class genericC{
 		int node1;
 		int node2;
 		int node3;
+
+		// Label for the module
+		std::string label;
 	public:
 		// Constructor
 		genericC(){
@@ -39,6 +45,12 @@ class genericC{
 		virtual gParam * getParameters() = 0;
 		virtual void setNodes(int n1, int n2, int n3) = 0;
 		virtual int* getNodes() = 0;
+		void setLabel(std::string inLab){
+			label = inLab;
+		}
+		std::string getLabel(){
+			return label;
+		}
 };
 
 class resistor : public genericC{
@@ -81,6 +93,8 @@ class voltageSource : public genericC{
 		void printAll();
 		void setParameters(gParam volts, gParam acdc);
 		void setNodes(int positive, int negative, int n3 = -1);
+		int* getNodes();
+		gParam* getParameters();
 };
 
 class graph{
