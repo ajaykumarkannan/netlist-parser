@@ -1,0 +1,6 @@
+# Temporary Files
+*~
+
+# Binary and object files
+*.o
+*.out
