@@ -1,3 +1,7 @@
+# Hidden Files
+.*
+*.swp
+
 # Temporary Files
 *~
 
