@@ -19,7 +19,20 @@ genericC::genericC(gParam a, gParam b, int n1, int n2, int n3){
 	node2 = n2;
 	node3 = n3;
 };
-
+int* genericC::getNodes(){
+	int* out;
+	if(node3 > 0){
+		out = new int[3];
+		out[2] = node3;
+	}
+	else{
+		out = new int[2];
+	}
+	
+	out[0] = node1;
+	out[1] = node2;
+	return out;
+}
 /************Resistor class function definitions********************/
 
 // Prints all the parameters and nodes
@@ -42,14 +55,6 @@ gParam* resistor::getParameters(){
 	gParam* out;
 	out = new gParam;
 	out[0] = param0;
-	return out;
-}
-
-int* resistor::getNodes(){
-	int* out;
-	out = new int[2];
-	out[0] = node1;
-	out[1] = node2;
 	return out;
 }
 
@@ -95,14 +100,6 @@ void voltageSource::setNodes(int positive, int negative, int n3){
 	node2 = negative;
 }
 
-int* voltageSource::getNodes(){
-	int* out;
-	out = new int[2];
-	out[0] = node1;
-	out[1] = node2;
-	return out;
-}
-
 void voltageSource::insert(voltageSource *ptr){
 	if(next == NULL) next = ptr;
 	else next->insert(ptr);
@@ -145,3 +142,9 @@ resistor *headNode::topR(){
 	return rHead;
 }
 
+/*****************Graph class functions**************************/
+// Constructor
+graph::graph(){
+	Nedges = 0;
+	Nnodes = 0;
+}

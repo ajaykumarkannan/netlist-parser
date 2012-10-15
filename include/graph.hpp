@@ -29,10 +29,10 @@ class genericC{
 		virtual void setParameters(gParam a, gParam b) = 0;
 		virtual gParam * getParameters() = 0;
 		virtual void setNodes(int n1, int n2, int n3) = 0;
-		virtual int* getNodes() = 0;
 		void setLabel(std::string inLab){
 			label = inLab;
 		}
+		int* getNodes();
 		std::string getLabel(){
 			return label;
 		}
@@ -53,7 +53,6 @@ class resistor : public genericC{
 		void setParameters(gParam a, gParam b = -1);
 		gParam* getParameters();
 		void setNodes(int n1, int n2, int n3 = -1);
-		int* getNodes();
 		void insert(resistor *ptr);
 		resistor *getNext();
 };
@@ -79,7 +78,6 @@ class voltageSource : public genericC{
 		void printAll();
 		void setParameters(gParam volts, gParam acdc);
 		void setNodes(int positive, int negative, int n3 = -1);
-		int* getNodes();
 		gParam* getParameters();
 		void insert(voltageSource *ptr);
 		voltageSource *getNext();
@@ -109,6 +107,10 @@ class headNode{
 
 };
 
+// This class contains the actual graph
 class graph{
-
+	int Nedges;		// Number of edges
+	int Nnodes;		// Number of nodes
+public:
+	graph();
 };

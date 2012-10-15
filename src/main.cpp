@@ -34,6 +34,8 @@ int main(int argc, char **argv){
 	 */ 
 	headNode *hN;
 	hN = new headNode();
+	int Nedges = 0; 			// Contains the number of edges/components
+	int Nnodes = 0;			// Contains the number of nodes
 
 	string line;			// Contains the current line processed
 	ifstream in; 			// ifstream to read file	
@@ -69,6 +71,9 @@ int main(int argc, char **argv){
 
 				// Insert into headnode
 				hN->insert(newRes);
+				Nedges++;
+				if(n1 > Nnodes) Nnodes = n1;
+				if(n2 > Nnodes) Nnodes = n2;
 				break;
 			case 'v':
 			case 'V':
@@ -88,6 +93,9 @@ int main(int argc, char **argv){
 
 				// Insert into headNode
 				hN->insert(vsNew);
+				Nedges++;
+				if(n1 > Nnodes) Nnodes = n1;
+				if(n2 > Nnodes) Nnodes = n2;
 				break;
 			case '.':
 				// Special case
@@ -96,12 +104,21 @@ int main(int argc, char **argv){
 				break;
 		}
 	}
+	int adjacency[Nedges][Nedges];
+	int *nodes = NULL;
+	cout << Nnodes << " " << Nedges << endl;
+	for (int i = 0; i < Nnodes; i++){
+		for(int j = 0; j < Nnodes; j++) adjacency[i][j] = 0;
+	}
 
 	voltageSource *vs;
 	vs = hN->topVS();
 
 	while(vs != NULL){
 		vs->printAll();
+		nodes = vs->getNodes();
+		adjacency[nodes[0]][nodes[1]] |= 2;
+		adjacency[nodes[1]][nodes[0]] |= 4;
 		vs = vs->getNext();
 	}
 
@@ -110,8 +127,18 @@ int main(int argc, char **argv){
 
 	while(r != NULL){
 		r->printAll();
+		nodes = r->getNodes();
+		adjacency[nodes[0]][nodes[1]] |= 1;
+		adjacency[nodes[1]][nodes[0]] |= 1;
 		r = r->getNext();
 	}
+	for (int i = 0; i < Nnodes; i++){
+		for(int j = 0; j < Nnodes; j++) {
+			cout << adjacency[i][j] << " ";
+		}
+		cout << endl;
+	}
+
 	return 0;
 }
 
