@@ -29,10 +29,14 @@ int main(int argc, char **argv){
 		return -2;
 	}
 
-	string line;
+	/* Headnode contains pointers to a linked list of each kind of structure
+	 * such as resistor, voltage source, capacitor, etc.
+	 */ 
+	headNode *hN;
+	hN = new headNode();
 
-	vector<string> strlist;
-	ifstream in; 	
+	string line;			// Contains the current line processed
+	ifstream in; 			// ifstream to read file	
 
 	// Open the desired file
 	in.open(argv[1]);
@@ -42,37 +46,48 @@ int main(int argc, char **argv){
 	}
 
 	while(in.good()){
-		string label, param1, param2;
-		int n1, n2;
+		string label, param1, param2;	// Holds label and parameters
+		int n1, n2;			// Holds the value of nodes
 
-		stringstream ss (stringstream::in | stringstream::out);
-		getline(in, line);			// Read line by line
-		strlist.push_back(line);
+		stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
+		getline(in, line);			// Read file line by line
 		ss << line;
 		char first = line[0];			// First character tells us what component it is
 		switch(first){
 			case 'r':
 			case 'R':
-				// Add resistor
+				// Adding resistor
+				// Using string stream to convert line of data into components
 				ss >> label >> n1 >> n2 >> param1 ;
+
+				// Creating new resistor object
 				resistor *newRes;
 				newRes = new resistor;
 				newRes->setParameters(convert(param1));
 				newRes->setNodes(n1, n2);
 				newRes->setLabel(label);
+
+				// Insert into headnode
+				hN->insert(newRes);
 				break;
 			case 'v':
 			case 'V':
 				// Add voltage supply
+				// Using string stream to convert line of data into components
 				ss >> label >> n1 >> n2 >> param1 >> param2;
 				float temp;
 				if(param1 == "dc" || param1 == "DC") temp = 1;
 				else temp = 0;
+
+				// Creating new voltageSource object
 				voltageSource *vsNew;
 				vsNew = new voltageSource;
 				vsNew->setParameters(atof(param2.c_str()), temp);
 				vsNew->setNodes(n1, n2);
 				vsNew->setLabel(label);
+
+				// Insert into headNode
+				hN->insert(vsNew);
 				break;
 			case '.':
 				// Special case
@@ -80,6 +95,22 @@ int main(int argc, char **argv){
 			default:
 				break;
 		}
+	}
+
+	voltageSource *vs;
+	vs = hN->topVS();
+
+	while(vs != NULL){
+		vs->printAll();
+		vs = vs->getNext();
+	}
+
+	resistor *r;
+	r = hN->topR();
+
+	while(r != NULL){
+		r->printAll();
+		r = r->getNext();
 	}
 	return 0;
 }

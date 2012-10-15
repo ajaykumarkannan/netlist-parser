@@ -3,8 +3,24 @@
 
 using namespace std;
 
-/************Resistor class function definitions******************
- *****************************************************************/
+/******************genericC class function definitions***************/
+genericC::genericC(){
+	param0 = -1;
+	param1 = -1;
+	node1 = -1;
+	node2 = -1;
+	node3 = -1;
+};
+
+genericC::genericC(gParam a, gParam b, int n1, int n2, int n3){
+	param0 = a;
+	param1 = b;
+	node1 = n1; 
+	node2 = n2;
+	node3 = n3;
+};
+
+/************Resistor class function definitions********************/
 
 // Prints all the parameters and nodes
 void resistor::printAll(){
@@ -35,6 +51,15 @@ int* resistor::getNodes(){
 	out[0] = node1;
 	out[1] = node2;
 	return out;
+}
+
+void resistor::insert(resistor *ptr){
+	if(next == NULL) next = ptr;
+	else next->insert(ptr);
+}
+
+resistor *resistor::getNext(){
+	return next;
 }
 
 /**********voltageSource class function definitions****************
@@ -77,3 +102,46 @@ int* voltageSource::getNodes(){
 	out[1] = node2;
 	return out;
 }
+
+void voltageSource::insert(voltageSource *ptr){
+	if(next == NULL) next = ptr;
+	else next->insert(ptr);
+}
+
+voltageSource *voltageSource::getNext(){
+	return next;
+}
+/******************headNode Function Definitions*******************
+ * Overloaded constructors */
+headNode::headNode(){
+	vsHead = NULL;
+	rHead = NULL;
+}
+headNode::headNode(resistor *ptr){
+	rHead = ptr;
+	vsHead = NULL;
+}
+headNode::headNode(voltageSource *ptr){
+	vsHead = ptr;
+	rHead = NULL;
+}
+
+// Overloaded insert functions
+void headNode::insert(voltageSource *ptr){
+	if(vsHead == NULL) vsHead = ptr;
+	else vsHead->insert(ptr);
+}
+void headNode::insert(resistor *ptr){
+	if(rHead == NULL) rHead = ptr;
+	else rHead->insert(ptr);
+}
+
+// Overload top functions
+voltageSource *headNode::topVS(){
+	return vsHead;
+}
+
+resistor *headNode::topR(){
+	return rHead;
+}
+

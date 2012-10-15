@@ -23,23 +23,8 @@ class genericC{
 		std::string label;
 	public:
 		// Constructor
-		genericC(){
-			param0 = -1;
-			param1 = -1;
-			node1 = -1;
-			node2 = -1;
-			node3 = -1;
-		};
-
-		genericC(gParam a, gParam b = -1, int n1 = -1, int n2 = -1, int n3 = -1){
-			param0 = a;
-			param1 = b;
-			node1 = n1; 
-			node2 = n2;
-			node3 = n3;
-		};
-
-
+		genericC();
+		genericC(gParam a, gParam b = -1, int n1 = -1, int n2 = -1, int n3 = -1);
 		virtual void printAll() = 0;
 		virtual void setParameters(gParam a, gParam b) = 0;
 		virtual gParam * getParameters() = 0;
@@ -54,13 +39,14 @@ class genericC{
 };
 
 class resistor : public genericC{
+	resistor* next;
 	public:
 		resistor() : genericC (){
-			// Empty
+			next = NULL;
 		}
 
 		resistor(gParam resistance, int n1, int n2) : genericC(resistance, -1, n1, n2, -1){
-			// Calls the generic structure
+			next = NULL;
 		}
 
 		void printAll();
@@ -68,15 +54,13 @@ class resistor : public genericC{
 		gParam* getParameters();
 		void setNodes(int n1, int n2, int n3 = -1);
 		int* getNodes();
-
+		void insert(resistor *ptr);
+		resistor *getNext();
 };
 
 class voltageSource : public genericC{
+	voltageSource *next;
 	public:
-		voltageSource() : genericC(){
-			// Empty
-		}
-
 		/************************************************************
 		 * volts is the voltage associated with the power source.
 		 * acdc is whether the source is an ac source or a dc source. 
@@ -85,19 +69,46 @@ class voltageSource : public genericC{
 		 * The node order is important in the case of dc sources. The 
 		 * first node is the positive terminal and the second node 
 		 * is the negative terminal.
-		 ***********************************************************/ 
-		voltageSource(gParam volts, gParam acdc, int positiveNode, int negativeNode) : genericC(volts, acdc, positiveNode, negativeNode, -1){
-			// Calls the generic structure
+		 ***********************************************************/ 		
+		 voltageSource() : genericC(){
+			next = NULL;
 		}
-
+		voltageSource(gParam volts, gParam acdc, int positiveNode, int negativeNode) : genericC(volts, acdc, positiveNode, negativeNode, -1){
+			next = NULL;
+		}
 		void printAll();
 		void setParameters(gParam volts, gParam acdc);
 		void setNodes(int positive, int negative, int n3 = -1);
 		int* getNodes();
 		gParam* getParameters();
+		void insert(voltageSource *ptr);
+		voltageSource *getNext();
+};
+
+/* This class is for a linked list of all the inputs to allow nodes
+ * of the class definition for any particular type. Each type of 
+ * input data has a different linked list. This should simplify 
+ * the making of the graph data structure.
+ */
+class headNode{
+	voltageSource *vsHead;
+	resistor *rHead;
+	public:
+	// Overloaded Constructors
+	headNode();
+	headNode(resistor *ptr);
+	headNode(voltageSource *ptr);
+	
+	// Node insert function
+	void insert(voltageSource *ptr);
+	void insert(resistor *ptr);
+
+	// Returns top node
+	voltageSource *topVS();
+	resistor *topR();
+
 };
 
 class graph{
-
 
 };
