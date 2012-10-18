@@ -37,9 +37,7 @@ int* genericC::getNodes(){
 
 // Prints all the parameters and nodes
 void resistor::printAll(){
-	cout << "R = " << param0 << " ohms\n";
-	cout << "Node1 = " << node1 << endl;
-	cout << "Node2 = " << node2 << endl;
+	cout << label << ": " << param0 << " ohms from " << node1 << " to " << node2 << endl;
 }
 
 void resistor::setParameters(gParam res, gParam b){
@@ -70,11 +68,11 @@ resistor *resistor::getNext(){
 /**********voltageSource class function definitions****************
  *****************************************************************/
 void voltageSource::printAll(){
-	if(param1 == 1) cout << "DC source of ";
-	else cout << "AC source of ";
-	cout << param0 << " volts\n";
-	cout << "Positive Terminal = " << node1 << endl;
-	cout << "Negative Terminal = " << node2 << endl;
+	cout << label;
+	if(param1 == 1) cout << " DC voltage source of ";
+	else cout << " AC voltage source of ";
+	cout << param0 << "V. ";
+	cout << "+ve = " << node1 << ", -ve = " << node2 << endl;
 }
 
 /* If acdc > 0, then set the value as DC i.e. param1 = 1 and if
@@ -108,18 +106,69 @@ void voltageSource::insert(voltageSource *ptr){
 voltageSource *voltageSource::getNext(){
 	return next;
 }
+
+/**********currentSource class function definitions****************
+ *****************************************************************/
+void currentSource::printAll(){
+	cout << label;
+	if(param1 == 1) cout << " DC current source of ";
+	else cout << " AC current source of ";
+	cout << param0 << "A. ";
+	cout << "+ve = " << node1 << ", -ve = " << node2 << endl;
+}
+
+/* If acdc > 0, then set the value as DC i.e. param1 = 1 and if
+ * acdc <= 0, then set the value as AC i.e. param1 = 0.
+ */ 
+void currentSource::setParameters(gParam amps, gParam acdc){
+	param0 = amps;
+	if(acdc > 0) param1 = 1;
+	else param1 = 0;
+}
+
+gParam* currentSource::getParameters(){
+	gParam* out;
+	out = new gParam[2];
+	out[0] = param0;
+	out[1] = param1;
+	return out;
+}
+
+// Only set the postive and negative nodes. The third is ignored
+void currentSource::setNodes(int positive, int negative, int n3){
+	node1 = positive;
+	node2 = negative;
+}
+
+void currentSource::insert(currentSource *ptr){
+	if(next == NULL) next = ptr;
+	else next->insert(ptr);
+}
+
+currentSource *currentSource::getNext(){
+	return next;
+}
+
 /******************headNode Function Definitions*******************
  * Overloaded constructors */
 headNode::headNode(){
 	vsHead = NULL;
 	rHead = NULL;
+	iHead = NULL;
 }
 headNode::headNode(resistor *ptr){
 	rHead = ptr;
 	vsHead = NULL;
+	iHead = NULL;
 }
 headNode::headNode(voltageSource *ptr){
 	vsHead = ptr;
+	rHead = NULL;
+	iHead = NULL;
+}
+headNode::headNode(currentSource *ptr){
+	iHead = ptr;
+	vsHead = NULL;
 	rHead = NULL;
 }
 
@@ -133,6 +182,11 @@ void headNode::insert(resistor *ptr){
 	else rHead->insert(ptr);
 }
 
+void headNode::insert(currentSource *ptr){
+	if(iHead == NULL) iHead = ptr;
+	else iHead->insert(ptr);
+}
+
 // Overload top functions
 voltageSource *headNode::topVS(){
 	return vsHead;
@@ -140,6 +194,10 @@ voltageSource *headNode::topVS(){
 
 resistor *headNode::topR(){
 	return rHead;
+}
+
+currentSource *headNode::topI(){
+	return iHead;
 }
 
 /*****************Graph class functions**************************/

@@ -83,6 +83,33 @@ class voltageSource : public genericC{
 		voltageSource *getNext();
 };
 
+class currentSource : public genericC{
+	currentSource *next;
+	public:
+		/************************************************************
+		 * volts is the voltage associated with the power source.
+		 * acdc is whether the source is an ac source or a dc source. 
+		 * Let us fix the convention for ac source, the value is 0.
+		 * For dc source, the value is 1.
+		 * The node order is important in the case of dc sources. The 
+		 * first node is the positive terminal and the second node 
+		 * is the negative terminal.
+		 ***********************************************************/ 		
+		currentSource() : genericC(){
+			next = NULL;
+		}
+		currentSource(gParam amps, gParam acdc, int positiveNode, int negativeNode) : genericC(amps, acdc, positiveNode, negativeNode, -1){
+			next = NULL;
+		}
+		void printAll();
+		void setParameters(gParam amps, gParam acdc);
+		void setNodes(int positive, int negative, int n3 = -1);
+		gParam* getParameters();
+		void insert(currentSource *ptr);
+		currentSource *getNext();
+};
+
+
 /* This class is for a linked list of all the inputs to allow nodes
  * of the class definition for any particular type. Each type of 
  * input data has a different linked list. This should simplify 
@@ -91,20 +118,23 @@ class voltageSource : public genericC{
 class headNode{
 	voltageSource *vsHead;
 	resistor *rHead;
+	currentSource *iHead;
+	
 	public:
 	// Overloaded Constructors
 	headNode();
 	headNode(resistor *ptr);
 	headNode(voltageSource *ptr);
-	
+	headNode(currentSource *ptr);
 	// Node insert function
 	void insert(voltageSource *ptr);
 	void insert(resistor *ptr);
-
+	void insert(currentSource *ptr);
+	
 	// Returns top node
 	voltageSource *topVS();
 	resistor *topR();
-
+	currentSource *topI();
 };
 
 // This class contains the actual graph

@@ -50,6 +50,7 @@ int main(int argc, char **argv){
 	while(in.good()){
 		string label, param1, param2;	// Holds label and parameters
 		int n1, n2;			// Holds the value of nodes
+		float temp;
 
 		stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
 		getline(in, line);			// Read file line by line
@@ -80,9 +81,12 @@ int main(int argc, char **argv){
 				// Add voltage supply
 				// Using string stream to convert line of data into components
 				ss >> label >> n1 >> n2 >> param1 >> param2;
-				float temp;
-				if(param1 == "dc" || param1 == "DC") temp = 1;
-				else temp = 0;
+				if(param1 == "ac" || param1 == "AC") temp = 0;
+				else if (param1 == "dc" || param1 == "DC") temp = 1;
+				else {
+					temp = 1;
+					param2 = param1;
+				}
 
 				// Creating new voltageSource object
 				voltageSource *vsNew;
@@ -97,6 +101,31 @@ int main(int argc, char **argv){
 				if(n1 > Nnodes) Nnodes = n1;
 				if(n2 > Nnodes) Nnodes = n2;
 				break;
+			case 'i':
+			case 'I':
+				// Add current supply
+				// Using string stream to convert line of data into components
+				ss >> label >> n1 >> n2 >> param1 >> param2;
+				if(param1 == "ac" || param1 == "AC") temp = 0;
+				else if (param1 == "dc" || param1 == "DC") temp = 1;
+				else {
+					temp = 1;
+					param2 = param1;
+				}
+
+				// Creating new currentSource object
+				currentSource *iNew;
+				iNew = new currentSource;
+				iNew->setParameters(atof(param2.c_str()), temp);
+				iNew->setNodes(n1, n2);
+				iNew->setLabel(label);
+
+				// Insert into headNode
+				hN->insert(iNew);
+				Nedges++;
+				if(n1 > Nnodes) Nnodes = n1;
+				if(n2 > Nnodes) Nnodes = n2;
+				break;
 			case '.':
 				// Special case
 				break;
@@ -104,7 +133,9 @@ int main(int argc, char **argv){
 				break;
 		}
 	}
-	int adjacency[Nedges][Nedges];
+
+	Nnodes = Nnodes +1;
+	int adjacency[Nnodes][Nnodes];
 	int *nodes = NULL;
 	cout << Nnodes << " " << Nedges << endl;
 	for (int i = 0; i < Nnodes; i++){
@@ -120,6 +151,17 @@ int main(int argc, char **argv){
 		adjacency[nodes[0]][nodes[1]] |= 2;
 		adjacency[nodes[1]][nodes[0]] |= 4;
 		vs = vs->getNext();
+	}
+
+	currentSource *is;
+	is = hN->topI();
+
+	while(is != NULL){
+		is->printAll();
+		nodes = is->getNodes();
+		adjacency[nodes[0]][nodes[1]] |= 2;
+		adjacency[nodes[1]][nodes[0]] |= 4;
+		is = is->getNext();
 	}
 
 	resistor *r;
