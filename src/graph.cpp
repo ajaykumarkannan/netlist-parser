@@ -5,6 +5,8 @@ using namespace std;
 
 /******************genericC class function definitions***************/
 genericC::genericC(){
+	srcNext = NULL;
+	sinkNext = NULL;
 	param0 = -1;
 	param1 = -1;
 	node1 = -1;
@@ -13,12 +15,15 @@ genericC::genericC(){
 };
 
 genericC::genericC(gParam a, gParam b, int n1, int n2, int n3){
+	srcNext = NULL;
+	sinkNext = NULL;	
 	param0 = a;
 	param1 = b;
 	node1 = n1; 
 	node2 = n2;
 	node3 = n3;
 };
+
 int* genericC::getNodes(){
 	int* out;
 	if(node3 > 0){
@@ -28,11 +33,38 @@ int* genericC::getNodes(){
 	else{
 		out = new int[2];
 	}
-	
+
 	out[0] = node1;
 	out[1] = node2;
 	return out;
 }
+
+void genericC::printAll(){
+	cout << label;
+	cout << ": " << param0 << " ";
+	cout << "src = " << node1 << ", sink = " << node2 << endl;
+}
+
+void genericC::srcInsert(genericC *ptr){
+	if(ptr == NULL) return;
+	else if(srcNext == NULL) srcNext = ptr;
+	else srcNext->srcInsert(ptr);
+}
+
+void genericC::sinkInsert(genericC *ptr){
+	if(ptr == NULL) return;
+	else if(sinkNext == NULL) sinkNext = ptr;
+	else sinkNext->sinkInsert(ptr);
+}
+
+genericC *genericC::getSrcNext(){
+	return srcNext;
+}
+
+genericC *genericC::getSinkNext(){
+	return sinkNext;
+}
+
 /************Resistor class function definitions********************/
 
 // Prints all the parameters and nodes
@@ -149,6 +181,35 @@ currentSource *currentSource::getNext(){
 	return next;
 }
 
+/******************Node Functions ********************************/
+node::node(){
+	srcList = NULL;
+	sinkList = NULL;
+}
+
+void node::insertSrc(genericC *ptr){
+	if (srcList != NULL) ptr->srcInsert(srcList);
+	srcList = ptr;
+}
+
+void node::insertSink(genericC *ptr){
+	if(sinkList != NULL) ptr->sinkInsert(sinkList);
+	sinkList = ptr;
+}
+
+void node::insert(genericC *src, genericC *sink){
+	insertSrc(src);
+	insertSink(sink);
+}
+
+genericC *node::getSrcList(){
+	return srcList;
+}
+
+genericC *node::getSinkList(){
+	return sinkList;
+	}
+
 /******************headNode Function Definitions*******************
  * Overloaded constructors */
 headNode::headNode(){
@@ -174,17 +235,20 @@ headNode::headNode(currentSource *ptr){
 
 // Overloaded insert functions
 void headNode::insert(voltageSource *ptr){
-	if(vsHead == NULL) vsHead = ptr;
-	else vsHead->insert(ptr);
+	if (ptr == NULL) return;
+	if(vsHead != NULL) ptr->insert(vsHead);
+	vsHead = ptr;
 }
 void headNode::insert(resistor *ptr){
-	if(rHead == NULL) rHead = ptr;
-	else rHead->insert(ptr);
+	if (ptr == NULL) return;
+	if(rHead != NULL) ptr->insert(rHead);
+	rHead = ptr;
 }
 
 void headNode::insert(currentSource *ptr){
-	if(iHead == NULL) iHead = ptr;
-	else iHead->insert(ptr);
+	if (ptr == NULL) return;
+	if(iHead != NULL) ptr->insert(iHead);
+	iHead = ptr;
 }
 
 // Overload top functions

@@ -24,18 +24,22 @@ using namespace std;
 float convert(string res);
 
 int main(int argc, char **argv){
+	int DEBUG = 0;
 	if(argc < 2) {
 		cout << "Usage: ./main.out filename" << endl;
 		return -2;
 	}
+
+	if(argc == 3) if (atoi(argv[2]) == 1) DEBUG = 1;
 
 	/* Headnode contains pointers to a linked list of each kind of structure
 	 * such as resistor, voltage source, capacitor, etc.
 	 */ 
 	headNode *hN;
 	hN = new headNode();
-	int Nedges = 0; 			// Contains the number of edges/components
-	int Nnodes = 0;			// Contains the number of nodes
+	unsigned int Nedges = 0;			// Contains the number of edges/components
+	unsigned int Nnodes = 0;			// Contains the number of nodes
+	vector<node> nodeList (10);
 
 	string line;			// Contains the current line processed
 	ifstream in; 			// ifstream to read file	
@@ -49,7 +53,7 @@ int main(int argc, char **argv){
 
 	while(in.good()){
 		string label, param1, param2;	// Holds label and parameters
-		int n1, n2;			// Holds the value of nodes
+		unsigned int n1, n2;			// Holds the value of nodes
 		float temp;
 
 		stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
@@ -75,6 +79,11 @@ int main(int argc, char **argv){
 				Nedges++;
 				if(n1 > Nnodes) Nnodes = n1;
 				if(n2 > Nnodes) Nnodes = n2;
+
+				// Insert into node list 
+				if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+				nodeList[n1].insertSrc((genericC *) newRes);
+				nodeList[n2].insertSink((genericC *) newRes);
 				break;
 			case 'v':
 			case 'V':
@@ -100,6 +109,11 @@ int main(int argc, char **argv){
 				Nedges++;
 				if(n1 > Nnodes) Nnodes = n1;
 				if(n2 > Nnodes) Nnodes = n2;
+
+				// Insert into node list 
+				if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+				nodeList[n1].insertSrc((genericC *) vsNew);
+				nodeList[n2].insertSink((genericC *) vsNew);
 				break;
 			case 'i':
 			case 'I':
@@ -125,6 +139,11 @@ int main(int argc, char **argv){
 				Nedges++;
 				if(n1 > Nnodes) Nnodes = n1;
 				if(n2 > Nnodes) Nnodes = n2;
+
+				// Insert into node list 
+				if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+				nodeList[n1].insertSrc((genericC *) iNew);
+				nodeList[n2].insertSink((genericC *) iNew);
 				break;
 			case '.':
 				// Special case
@@ -134,22 +153,21 @@ int main(int argc, char **argv){
 		}
 	}
 
-	Nnodes = Nnodes +1;
-	int adjacency[Nnodes][Nnodes];
+	cout << "Done parsing\n";
+	Nnodes = Nnodes + 1;
+	cout << "Number of Nodes = " << Nnodes << ", Number of edges = " << Nedges << endl;
 	int *nodes = NULL;
-	cout << Nnodes << " " << Nedges << endl;
-	for (int i = 0; i < Nnodes; i++){
-		for(int j = 0; j < Nnodes; j++) adjacency[i][j] = 0;
-	}
+	int total = Nnodes * Nnodes;
+	int *adjacency = new int[total];
+	for (int i = 0; i < total; i++) adjacency[i] = 0;
 
 	voltageSource *vs;
 	vs = hN->topVS();
-
 	while(vs != NULL){
-		vs->printAll();
+		// vs->printAll();
 		nodes = vs->getNodes();
-		adjacency[nodes[0]][nodes[1]] |= 2;
-		adjacency[nodes[1]][nodes[0]] |= 4;
+		adjacency[nodes[0]*Nnodes + nodes[1]] |= 2;
+		adjacency[nodes[1]*Nnodes + nodes[0]] |= 4;
 		vs = vs->getNext();
 	}
 
@@ -157,10 +175,10 @@ int main(int argc, char **argv){
 	is = hN->topI();
 
 	while(is != NULL){
-		is->printAll();
+		// is->printAll();
 		nodes = is->getNodes();
-		adjacency[nodes[0]][nodes[1]] |= 2;
-		adjacency[nodes[1]][nodes[0]] |= 4;
+		adjacency[nodes[0]*Nnodes + nodes[1]] |= 8;
+		adjacency[nodes[1]*Nnodes + nodes[0]] |= 16;
 		is = is->getNext();
 	}
 
@@ -168,18 +186,44 @@ int main(int argc, char **argv){
 	r = hN->topR();
 
 	while(r != NULL){
-		r->printAll();
+		// r->printAll();
 		nodes = r->getNodes();
-		adjacency[nodes[0]][nodes[1]] |= 1;
-		adjacency[nodes[1]][nodes[0]] |= 1;
+		adjacency[nodes[0]*Nnodes + nodes[1]] |= 1;
+		adjacency[nodes[1]*Nnodes + nodes[0]] |= 1;
 		r = r->getNext();
 	}
-	for (int i = 0; i < Nnodes; i++){
-		for(int j = 0; j < Nnodes; j++) {
-			cout << adjacency[i][j] << " ";
+
+	if(DEBUG){
+		for (int i = 0; i < total; i++){
+			cout << adjacency[i] << " ";
+			if((i+1) % Nnodes == 0) cout << endl;
 		}
 		cout << endl;
-	}
+
+		unsigned int nLSize = nodeList.size();
+		cout << "Size of nodelist is " << nLSize << endl << endl;
+		genericC *ptr;
+		for (unsigned int i = 0; i < nLSize ; i++){
+			if(nodeList[i].getSrcList() == NULL && nodeList[i].getSinkList() == NULL) continue;
+			cout << "Node " << i << ":\n";
+			cout << "Source List:\n";
+			ptr = nodeList[i].getSrcList();
+			while(ptr != NULL){
+				ptr->printAll();
+				ptr = ptr->getSrcNext();
+			}
+
+			cout << "Sink List: \n";
+			ptr = nodeList[i].getSinkList();
+
+			while(ptr != NULL){
+				ptr->printAll();
+				ptr = ptr->getSinkNext();
+			}
+			cout << endl;
+		}
+	}	
+	delete [] adjacency;
 
 	return 0;
 }

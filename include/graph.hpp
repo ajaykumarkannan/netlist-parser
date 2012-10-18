@@ -9,6 +9,9 @@ typedef float gParam;
 
 class genericC{
 	protected:
+		genericC *srcNext;
+		genericC *sinkNext;
+
 		// Atmost we need 2 parameters. We can add more if required.
 		gParam param0;
 		gParam param1;
@@ -25,7 +28,7 @@ class genericC{
 		// Constructor
 		genericC();
 		genericC(gParam a, gParam b = -1, int n1 = -1, int n2 = -1, int n3 = -1);
-		virtual void printAll() = 0;
+		void printAll();
 		virtual void setParameters(gParam a, gParam b) = 0;
 		virtual gParam * getParameters() = 0;
 		virtual void setNodes(int n1, int n2, int n3) = 0;
@@ -36,79 +39,99 @@ class genericC{
 		std::string getLabel(){
 			return label;
 		}
+
+		void srcInsert(genericC *ptr);
+		void sinkInsert(genericC *ptr);
+		genericC *getSrcNext();
+		genericC *getSinkNext();
 };
 
 class resistor : public genericC{
 	resistor* next;
 	public:
-		resistor() : genericC (){
-			next = NULL;
-		}
+	resistor() : genericC (){
+		next = NULL;
+	}
 
-		resistor(gParam resistance, int n1, int n2) : genericC(resistance, -1, n1, n2, -1){
-			next = NULL;
-		}
+	resistor(gParam resistance, int n1, int n2) : genericC(resistance, -1, n1, n2, -1){
+		next = NULL;
+	}
 
-		void printAll();
-		void setParameters(gParam a, gParam b = -1);
-		gParam* getParameters();
-		void setNodes(int n1, int n2, int n3 = -1);
-		void insert(resistor *ptr);
-		resistor *getNext();
+	void printAll();
+	void setParameters(gParam a, gParam b = -1);
+	gParam* getParameters();
+	void setNodes(int n1, int n2, int n3 = -1);
+	void insert(resistor *ptr);
+	resistor *getNext();
 };
 
 class voltageSource : public genericC{
 	voltageSource *next;
 	public:
-		/************************************************************
-		 * volts is the voltage associated with the power source.
-		 * acdc is whether the source is an ac source or a dc source. 
-		 * Let us fix the convention for ac source, the value is 0.
-		 * For dc source, the value is 1.
-		 * The node order is important in the case of dc sources. The 
-		 * first node is the positive terminal and the second node 
-		 * is the negative terminal.
-		 ***********************************************************/ 		
-		 voltageSource() : genericC(){
-			next = NULL;
-		}
-		voltageSource(gParam volts, gParam acdc, int positiveNode, int negativeNode) : genericC(volts, acdc, positiveNode, negativeNode, -1){
-			next = NULL;
-		}
-		void printAll();
-		void setParameters(gParam volts, gParam acdc);
-		void setNodes(int positive, int negative, int n3 = -1);
-		gParam* getParameters();
-		void insert(voltageSource *ptr);
-		voltageSource *getNext();
+	/************************************************************
+	 * volts is the voltage associated with the power source.
+	 * acdc is whether the source is an ac source or a dc source. 
+	 * Let us fix the convention for ac source, the value is 0.
+	 * For dc source, the value is 1.
+	 * The node order is important in the case of dc sources. The 
+	 * first node is the positive terminal and the second node 
+	 * is the negative terminal.
+	 ***********************************************************/ 		
+	voltageSource() : genericC(){
+		next = NULL;
+	}
+	voltageSource(gParam volts, gParam acdc, int positiveNode, int negativeNode) : genericC(volts, acdc, positiveNode, negativeNode, -1){
+		next = NULL;
+	}
+	void printAll();
+	void setParameters(gParam volts, gParam acdc);
+	void setNodes(int positive, int negative, int n3 = -1);
+	gParam* getParameters();
+	void insert(voltageSource *ptr);
+	voltageSource *getNext();
 };
 
 class currentSource : public genericC{
 	currentSource *next;
 	public:
-		/************************************************************
-		 * volts is the voltage associated with the power source.
-		 * acdc is whether the source is an ac source or a dc source. 
-		 * Let us fix the convention for ac source, the value is 0.
-		 * For dc source, the value is 1.
-		 * The node order is important in the case of dc sources. The 
-		 * first node is the positive terminal and the second node 
-		 * is the negative terminal.
-		 ***********************************************************/ 		
-		currentSource() : genericC(){
-			next = NULL;
-		}
-		currentSource(gParam amps, gParam acdc, int positiveNode, int negativeNode) : genericC(amps, acdc, positiveNode, negativeNode, -1){
-			next = NULL;
-		}
-		void printAll();
-		void setParameters(gParam amps, gParam acdc);
-		void setNodes(int positive, int negative, int n3 = -1);
-		gParam* getParameters();
-		void insert(currentSource *ptr);
-		currentSource *getNext();
+	/************************************************************
+	 * volts is the voltage associated with the power source.
+	 * acdc is whether the source is an ac source or a dc source. 
+	 * Let us fix the convention for ac source, the value is 0.
+	 * For dc source, the value is 1.
+	 * The node order is important in the case of dc sources. The 
+	 * first node is the positive terminal and the second node 
+	 * is the negative terminal.
+	 ***********************************************************/ 		
+	currentSource() : genericC(){
+		next = NULL;
+	}
+	currentSource(gParam amps, gParam acdc, int positiveNode, int negativeNode) : genericC(amps, acdc, positiveNode, negativeNode, -1){
+		next = NULL;
+	}
+	void printAll();
+	void setParameters(gParam amps, gParam acdc);
+	void setNodes(int positive, int negative, int n3 = -1);
+	gParam* getParameters();
+	void insert(currentSource *ptr);
+	currentSource *getNext();
 };
 
+/* This class is to store the nodes that are present in the circuit.
+ * It will have a list of edges as well for each node. This will point
+ * to the data structure of the circuit element. 
+ */ 
+class node{
+	genericC *srcList;
+	genericC *sinkList;
+	public:
+	node();
+	void insertSrc(genericC *ptr);
+	void insertSink(genericC *ptr);
+	void insert(genericC *src, genericC *sink);
+	genericC *getSrcList();
+	genericC *getSinkList();
+};
 
 /* This class is for a linked list of all the inputs to allow nodes
  * of the class definition for any particular type. Each type of 
@@ -119,7 +142,7 @@ class headNode{
 	voltageSource *vsHead;
 	resistor *rHead;
 	currentSource *iHead;
-	
+
 	public:
 	// Overloaded Constructors
 	headNode();
@@ -130,7 +153,7 @@ class headNode{
 	void insert(voltageSource *ptr);
 	void insert(resistor *ptr);
 	void insert(currentSource *ptr);
-	
+
 	// Returns top node
 	voltageSource *topVS();
 	resistor *topR();
@@ -141,6 +164,6 @@ class headNode{
 class graph{
 	int Nedges;		// Number of edges
 	int Nnodes;		// Number of nodes
-public:
+	public:
 	graph();
 };
