@@ -216,21 +216,33 @@ headNode::headNode(){
 	vsHead = NULL;
 	rHead = NULL;
 	iHead = NULL;
+	vsEnd = NULL;
+	rEnd = NULL;
+	iEnd = NULL;
 }
 headNode::headNode(resistor *ptr){
 	rHead = ptr;
 	vsHead = NULL;
-	iHead = NULL;
+	vsEnd = NULL;
+	rEnd = ptr;
+	iEnd = NULL;
+iHead = NULL;
 }
 headNode::headNode(voltageSource *ptr){
 	vsHead = ptr;
 	rHead = NULL;
 	iHead = NULL;
+	vsEnd = ptr;
+	rEnd = NULL;
+	iEnd = NULL;
 }
 headNode::headNode(currentSource *ptr){
 	iHead = ptr;
 	vsHead = NULL;
 	rHead = NULL;
+	vsEnd = NULL;
+	rEnd = NULL;
+	iEnd = ptr;
 }
 
 // Overloaded insert functions
@@ -238,24 +250,32 @@ void headNode::insert(voltageSource *ptr){
 	if (ptr == NULL) return;
 	if(vsHead != NULL) ptr->insert(vsHead);
 	vsHead = ptr;
+	if(vsEnd == NULL) vsEnd = ptr;
 }
+
 void headNode::insert(resistor *ptr){
 	if (ptr == NULL) return;
 	if(rHead != NULL) ptr->insert(rHead);
 	rHead = ptr;
+	if(rEnd == NULL) rEnd = ptr;
 }
 
 void headNode::insert(currentSource *ptr){
 	if (ptr == NULL) return;
 	if(iHead != NULL) ptr->insert(iHead);
 	iHead = ptr;
+	if(iEnd == NULL) iEnd = ptr;
 }
+
 
 // Merge function for two head nodes
 void headNode::merge(headNode hN){
-	this->insert(hN.topVS());
-	this->insert(hN.topR());
-	this->insert(hN.topI());
+	bottomVS()->insert(hN.vsHead);
+	bottomR()->insert(hN.rHead);
+	bottomI()->insert(hN.iHead);
+	vsEnd = hN.bottomVS();
+	iEnd = hN.bottomI();
+	rEnd = hN.bottomR();
 }
 
 // Overload top functions
@@ -269,4 +289,16 @@ resistor *headNode::topR(){
 
 currentSource *headNode::topI(){
 	return iHead;
+}
+
+voltageSource *headNode::bottomVS(){
+	return vsEnd;
+}
+
+resistor *headNode::bottomR(){
+	return rEnd;
+}
+
+currentSource *headNode::bottomI(){
+	return iEnd;
 }

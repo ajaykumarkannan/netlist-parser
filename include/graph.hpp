@@ -165,8 +165,11 @@ class node{
  */
 class headNode{
 	voltageSource *vsHead;
+	voltageSource *vsEnd;
 	resistor *rHead;
+	resistor *rEnd;
 	currentSource *iHead;
+	currentSource *iEnd;
 
 	public:
 	// Overloaded Constructors
@@ -187,4 +190,9 @@ class headNode{
 	voltageSource *topVS();
 	resistor *topR();
 	currentSource *topI();
+
+	// Returns bottom node
+	voltageSource *bottomVS();
+	resistor *bottomR();
+	currentSource *bottomI();
 };

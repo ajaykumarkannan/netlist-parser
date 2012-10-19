@@ -80,7 +80,6 @@ int main(int argc, char **argv){
 			localhN = new headNode[nThreads];
 		}
 
-		cout << tid << endl;
 		hN = &localhN[tid];
 
 		while(in.good()){
@@ -174,17 +173,19 @@ int main(int argc, char **argv){
 						break;
 				}
 
+				if(!valid) continue; 
+					
 #pragma omp critical
-				{					if(valid){
-											 if(n1 > Nnodes) Nnodes = n1;
-											 if(n2 > Nnodes) Nnodes = n2;
-											 if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-											 // Insert into node list 
-											 nodeList[n1].insertSrc(ptr);
-											 nodeList[n2].insertSink(ptr);
-										 }
+					{
+
+						if(n1 > Nnodes) Nnodes = n1;
+						if(n2 > Nnodes) Nnodes = n2;
+						if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+						// Insert into node list 
+						nodeList[n1].insertSrc(ptr);
+						nodeList[n2].insertSink(ptr);
+					}
 				}
-			}
 		}
 
 #pragma omp single
@@ -194,6 +195,7 @@ int main(int argc, char **argv){
 			{
 				main->merge(localhN[i]);
 			}
+
 		}
 #pragma omp critical
 		if(Nnodes > nodeTemp) nodeTemp = Nnodes;
