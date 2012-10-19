@@ -156,6 +156,8 @@ int main(int argc, char **argv){
 	cout << "Done parsing\n";
 	Nnodes = Nnodes + 1;
 	cout << "Number of Nodes = " << Nnodes << ", Number of edges = " << Nedges << endl;
+
+	/*
 	int *nodes = NULL;
 	int total = Nnodes * Nnodes;
 	int *adjacency = new int[total];
@@ -193,37 +195,45 @@ int main(int argc, char **argv){
 		r = r->getNext();
 	}
 
+	*/
+
 	if(DEBUG){
+		/*
 		for (int i = 0; i < total; i++){
 			cout << adjacency[i] << " ";
 			if((i+1) % Nnodes == 0) cout << endl;
 		}
 		cout << endl;
+		*/
 
 		unsigned int nLSize = nodeList.size();
 		cout << "Size of nodelist is " << nLSize << endl << endl;
 		genericC *ptr;
+		int *node;
+		cout << "Sparse Adjacency Matrix with no connections eliminated - \n";
+		cout << "Current node: list of nodes connected as sinks | list of nodes connected as sources\n";
 		for (unsigned int i = 0; i < nLSize ; i++){
 			if(nodeList[i].getSrcList() == NULL && nodeList[i].getSinkList() == NULL) continue;
-			cout << "Node " << i << ":\n";
-			cout << "Source List:\n";
+			cout << i << ": ";
 			ptr = nodeList[i].getSrcList();
 			while(ptr != NULL){
-				ptr->printAll();
+				node = ptr->getNodes();
+				cout << node[1] << " "; 
 				ptr = ptr->getSrcNext();
 			}
 
-			cout << "Sink List: \n";
+			cout << "| ";
 			ptr = nodeList[i].getSinkList();
 
 			while(ptr != NULL){
-				ptr->printAll();
+				node = ptr->getNodes();
+				cout << node[0] << " "; 
 				ptr = ptr->getSinkNext();
 			}
 			cout << endl;
 		}
 	}	
-	delete [] adjacency;
+	// delete [] adjacency;
 
 	return 0;
 }

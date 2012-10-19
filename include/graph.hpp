@@ -28,6 +28,10 @@ class genericC{
 		// Constructor
 		genericC();
 		genericC(gParam a, gParam b = -1, int n1 = -1, int n2 = -1, int n3 = -1);
+
+		// Destructor - Memory clean up
+		~genericC();
+
 		void printAll();
 		virtual void setParameters(gParam a, gParam b) = 0;
 		virtual gParam * getParameters() = 0;
@@ -49,12 +53,18 @@ class genericC{
 class resistor : public genericC{
 	resistor* next;
 	public:
-	resistor() : genericC (){
+	resistor() : genericC(){
 		next = NULL;
 	}
 
 	resistor(gParam resistance, int n1, int n2) : genericC(resistance, -1, n1, n2, -1){
 		next = NULL;
+	}
+
+	~resistor(){
+		if(next != NULL) {
+			next->~resistor();
+		}
 	}
 
 	void printAll();
@@ -80,9 +90,17 @@ class voltageSource : public genericC{
 	voltageSource() : genericC(){
 		next = NULL;
 	}
+
 	voltageSource(gParam volts, gParam acdc, int positiveNode, int negativeNode) : genericC(volts, acdc, positiveNode, negativeNode, -1){
 		next = NULL;
 	}
+
+	~voltageSource(){
+		if(next != NULL) {
+			next->~voltageSource();
+		}
+	}
+
 	void printAll();
 	void setParameters(gParam volts, gParam acdc);
 	void setNodes(int positive, int negative, int n3 = -1);
@@ -109,6 +127,13 @@ class currentSource : public genericC{
 	currentSource(gParam amps, gParam acdc, int positiveNode, int negativeNode) : genericC(amps, acdc, positiveNode, negativeNode, -1){
 		next = NULL;
 	}
+
+	~currentSource() {
+		if(next != NULL) {
+			next->~currentSource();
+		}
+	}
+
 	void printAll();
 	void setParameters(gParam amps, gParam acdc);
 	void setNodes(int positive, int negative, int n3 = -1);
@@ -158,12 +183,4 @@ class headNode{
 	voltageSource *topVS();
 	resistor *topR();
 	currentSource *topI();
-};
-
-// This class contains the actual graph
-class graph{
-	int Nedges;		// Number of edges
-	int Nnodes;		// Number of nodes
-	public:
-	graph();
 };

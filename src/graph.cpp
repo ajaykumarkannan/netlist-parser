@@ -263,10 +263,3 @@ resistor *headNode::topR(){
 currentSource *headNode::topI(){
 	return iHead;
 }
-
-/*****************Graph class functions**************************/
-// Constructor
-graph::graph(){
-	Nedges = 0;
-	Nnodes = 0;
-}
