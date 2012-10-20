@@ -11,10 +11,12 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <omp.h>
 #include "../include/graph.hpp"
 #ifndef STRDEF
 #include <string>
 #endif
+#define m_iUseableProcessors	1
 
 using namespace std;
 
@@ -51,160 +53,183 @@ int main(int argc, char **argv){
 		return -1;
 	}
 
-	while(in.good()){
-		string label, param1, param2;	// Holds label and parameters
-		unsigned int n1, n2;			// Holds the value of nodes
-		float temp;
+	int tid; 				// Thread id
+	int nThreads;				// Number of threads
 
-		stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
-		getline(in, line);			// Read file line by line
-		ss << line;
-		char first = line[0];			// First character tells us what component it is
-		switch(first){
-			case 'r':
-			case 'R':
-				// Adding resistor
-				// Using string stream to convert line of data into components
-				ss >> label >> n1 >> n2 >> param1 ;
+	// omp_set_num_threads(m_iUseableProcessors);
 
-				// Creating new resistor object
-				resistor *newRes;
-				newRes = new resistor;
-				newRes->setParameters(convert(param1));
-				newRes->setNodes(n1, n2);
-				newRes->setLabel(label);
+#pragma omp parallel private(tid, line)
+	{
+		tid = omp_get_thread_num();
+#pragma omp master
+		{
+			nThreads = omp_get_num_threads();
+			cout << nThreads << " threads" << endl;
+		}
 
-				// Insert into headnode
-				hN->insert(newRes);
-				Nedges++;
-				if(n1 > Nnodes) Nnodes = n1;
-				if(n2 > Nnodes) Nnodes = n2;
+		while(in.good()){
+			string label, param1, param2;	// Holds label and parameters
+			unsigned int n1, n2;			// Holds the value of nodes
+			float temp;
+			stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
 
-				// Insert into node list 
-				if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-				nodeList[n1].insertSrc((genericC *) newRes);
-				nodeList[n2].insertSink((genericC *) newRes);
-				break;
-			case 'v':
-			case 'V':
-				// Add voltage supply
-				// Using string stream to convert line of data into components
-				ss >> label >> n1 >> n2 >> param1 >> param2;
-				if(param1 == "ac" || param1 == "AC") temp = 0;
-				else if (param1 == "dc" || param1 == "DC") temp = 1;
-				else {
-					temp = 1;
-					param2 = param1;
-				}
+#pragma omp critical		
+			getline(in, line);			// Read file line by line
 
-				// Creating new voltageSource object
-				voltageSource *vsNew;
-				vsNew = new voltageSource;
-				vsNew->setParameters(atof(param2.c_str()), temp);
-				vsNew->setNodes(n1, n2);
-				vsNew->setLabel(label);
+			ss << line;
+			char first = line[0];			// First character tells us what component it is
+			switch(first){
+				case 'r':
+				case 'R':
+					// Adding resistor
+					// Using string stream to convert line of data into components
+					ss >> label >> n1 >> n2 >> param1 ;
 
-				// Insert into headNode
-				hN->insert(vsNew);
-				Nedges++;
-				if(n1 > Nnodes) Nnodes = n1;
-				if(n2 > Nnodes) Nnodes = n2;
+					// Creating new resistor object
+					resistor *newRes;
+					newRes = new resistor;
+					newRes->setParameters(convert(param1));
+					newRes->setNodes(n1, n2);
+					newRes->setLabel(label);
 
-				// Insert into node list 
-				if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-				nodeList[n1].insertSrc((genericC *) vsNew);
-				nodeList[n2].insertSink((genericC *) vsNew);
-				break;
-			case 'i':
-			case 'I':
-				// Add current supply
-				// Using string stream to convert line of data into components
-				ss >> label >> n1 >> n2 >> param1 >> param2;
-				if(param1 == "ac" || param1 == "AC") temp = 0;
-				else if (param1 == "dc" || param1 == "DC") temp = 1;
-				else {
-					temp = 1;
-					param2 = param1;
-				}
+					// Insert into headnode
+#pragma omp critical
+					{
+						hN->insert(newRes);
+						Nedges++;
+						if(n1 > Nnodes) Nnodes = n1;
+						if(n2 > Nnodes) Nnodes = n2;
 
-				// Creating new currentSource object
-				currentSource *iNew;
-				iNew = new currentSource;
-				iNew->setParameters(atof(param2.c_str()), temp);
-				iNew->setNodes(n1, n2);
-				iNew->setLabel(label);
+						// Insert into node list 
+						if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+						nodeList[n1].insertSrc((genericC *) newRes);
+						nodeList[n2].insertSink((genericC *) newRes);
+					}
+					break;
+				case 'v':
+				case 'V':
+					// Add voltage supply
+					// Using string stream to convert line of data into components
+					ss >> label >> n1 >> n2 >> param1 >> param2;
+					if(param1 == "ac" || param1 == "AC") temp = 0;
+					else if (param1 == "dc" || param1 == "DC") temp = 1;
+					else {
+						temp = 1;
+						param2 = param1;
+					}
 
-				// Insert into headNode
-				hN->insert(iNew);
-				Nedges++;
-				if(n1 > Nnodes) Nnodes = n1;
-				if(n2 > Nnodes) Nnodes = n2;
+					// Creating new voltageSource object
+					voltageSource *vsNew;
+					vsNew = new voltageSource;
+					vsNew->setParameters(atof(param2.c_str()), temp);
+					vsNew->setNodes(n1, n2);
+					vsNew->setLabel(label);
 
-				// Insert into node list 
-				if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-				nodeList[n1].insertSrc((genericC *) iNew);
-				nodeList[n2].insertSink((genericC *) iNew);
-				break;
-			case '.':
-				// Special case
-				break;
-			default:
-				break;
+					// Insert into headNode
+#pragma omp critical
+					{
+						hN->insert(vsNew);
+						Nedges++;
+						if(n1 > Nnodes) Nnodes = n1;
+						if(n2 > Nnodes) Nnodes = n2;
+						// Insert into node list 
+						if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+						nodeList[n1].insertSrc((genericC *) vsNew);
+						nodeList[n2].insertSink((genericC *) vsNew);
+					}
+					break;
+				case 'i':
+				case 'I':
+					// Add current supply
+					// Using string stream to convert line of data into components
+					ss >> label >> n1 >> n2 >> param1 >> param2;
+					if(param1 == "ac" || param1 == "AC") temp = 0;
+					else if (param1 == "dc" || param1 == "DC") temp = 1;
+					else {
+						temp = 1;
+						param2 = param1;
+					}
+
+					// Creating new currentSource object
+					currentSource *iNew;
+					iNew = new currentSource;
+					iNew->setParameters(atof(param2.c_str()), temp);
+					iNew->setNodes(n1, n2);
+					iNew->setLabel(label);
+
+					// Insert into headNode
+#pragma omp critical
+					{
+						hN->insert(iNew);
+						Nedges++;
+						if(n1 > Nnodes) Nnodes = n1;
+						if(n2 > Nnodes) Nnodes = n2;
+						// Insert into node list 
+						if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+						nodeList[n1].insertSrc((genericC *) iNew);
+						nodeList[n2].insertSink((genericC *) iNew);
+					}
+					break;
+				case '.':
+					// Special case
+					break;
+				default:
+					break;
+			}
 		}
 	}
-
 	cout << "Done parsing\n";
 	Nnodes = Nnodes + 1;
 	cout << "Number of Nodes = " << Nnodes << ", Number of edges = " << Nedges << endl;
 
 	/*
-	int *nodes = NULL;
-	int total = Nnodes * Nnodes;
-	int *adjacency = new int[total];
-	for (int i = 0; i < total; i++) adjacency[i] = 0;
+	   int *nodes = NULL;
+	   int total = Nnodes * Nnodes;
+	   int *adjacency = new int[total];
+	   for (int i = 0; i < total; i++) adjacency[i] = 0;
 
-	voltageSource *vs;
-	vs = hN->topVS();
-	while(vs != NULL){
-		// vs->printAll();
-		nodes = vs->getNodes();
-		adjacency[nodes[0]*Nnodes + nodes[1]] |= 2;
-		adjacency[nodes[1]*Nnodes + nodes[0]] |= 4;
-		vs = vs->getNext();
+	   voltageSource *vs;
+	   vs = hN->topVS();
+	   while(vs != NULL){
+	// vs->printAll();
+	nodes = vs->getNodes();
+	adjacency[nodes[0]*Nnodes + nodes[1]] |= 2;
+	adjacency[nodes[1]*Nnodes + nodes[0]] |= 4;
+	vs = vs->getNext();
 	}
 
 	currentSource *is;
 	is = hN->topI();
 
 	while(is != NULL){
-		// is->printAll();
-		nodes = is->getNodes();
-		adjacency[nodes[0]*Nnodes + nodes[1]] |= 8;
-		adjacency[nodes[1]*Nnodes + nodes[0]] |= 16;
-		is = is->getNext();
+	// is->printAll();
+	nodes = is->getNodes();
+	adjacency[nodes[0]*Nnodes + nodes[1]] |= 8;
+	adjacency[nodes[1]*Nnodes + nodes[0]] |= 16;
+	is = is->getNext();
 	}
 
 	resistor *r;
 	r = hN->topR();
 
 	while(r != NULL){
-		// r->printAll();
-		nodes = r->getNodes();
-		adjacency[nodes[0]*Nnodes + nodes[1]] |= 1;
-		adjacency[nodes[1]*Nnodes + nodes[0]] |= 1;
-		r = r->getNext();
+	// r->printAll();
+	nodes = r->getNodes();
+	adjacency[nodes[0]*Nnodes + nodes[1]] |= 1;
+	adjacency[nodes[1]*Nnodes + nodes[0]] |= 1;
+	r = r->getNext();
 	}
 
-	*/
+	 */
 
 	if(DEBUG){
 		/*
-		for (int i = 0; i < total; i++){
-			cout << adjacency[i] << " ";
-			if((i+1) % Nnodes == 0) cout << endl;
-		}
-		cout << endl;
-		*/
+		   for (int i = 0; i < total; i++){
+		   cout << adjacency[i] << " ";
+		   if((i+1) % Nnodes == 0) cout << endl;
+		   }
+		   cout << endl;
+		 */
 
 		unsigned int nLSize = nodeList.size();
 		cout << "Size of nodelist is " << nLSize << endl << endl;

@@ -174,10 +174,14 @@ class headNode{
 	headNode(resistor *ptr);
 	headNode(voltageSource *ptr);
 	headNode(currentSource *ptr);
+
 	// Node insert function
 	void insert(voltageSource *ptr);
 	void insert(resistor *ptr);
 	void insert(currentSource *ptr);
+	
+	// Merge two head nodes
+	void merge(headNode hN);
 
 	// Returns top node
 	voltageSource *topVS();

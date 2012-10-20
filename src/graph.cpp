@@ -208,7 +208,7 @@ genericC *node::getSrcList(){
 
 genericC *node::getSinkList(){
 	return sinkList;
-	}
+}
 
 /******************headNode Function Definitions*******************
  * Overloaded constructors */
@@ -249,6 +249,13 @@ void headNode::insert(currentSource *ptr){
 	if (ptr == NULL) return;
 	if(iHead != NULL) ptr->insert(iHead);
 	iHead = ptr;
+}
+
+// Merge function for two head nodes
+void headNode::merge(headNode hN){
+	this->insert(hN.topVS());
+	this->insert(hN.topR());
+	this->insert(hN.topI());
 }
 
 // Overload top functions
