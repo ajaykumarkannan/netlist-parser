@@ -34,19 +34,9 @@ int main(int argc, char **argv){
 
 	if(argc == 3) if (atoi(argv[2]) == 1) DEBUG = 1;
 
-	/* Headnode contains pointers to a linked list of each kind of structure
-	 * such as resistor, voltage source, capacitor, etc.
-	 */ 
-	headNode *main;					// Main headnode
-	headNode *hN;					// Head node for each thread
-	headNode *localhN;				// Local head node array
-
-	genericC *ptr;
-
-	main = new headNode();
 	unsigned int Nedges = 0;			// Contains the number of edges/components
 	unsigned int Nnodes = 0;			// Contains the number of nodes
-	unsigned int nodeTemp = 0;
+	unsigned int nodeTemp;
 	vector<node> nodeList (10);
 
 	string line;			// Contains the current line processed
@@ -61,14 +51,17 @@ int main(int argc, char **argv){
 
 	int tid; 				// Thread id
 	int nThreads;				// Number of threads
+	bool valid = false;
+	genericC *genPtr;
 
 	// omp_set_num_threads(m_iUseableProcessors);
 
-#pragma omp parallel private(ptr, tid, line, hN, Nnodes) shared(in, nThreads, localhN, main) reduction(+: Nedges)
+#pragma omp parallel private(genPtr, tid, line) shared(in, nThreads) reduction(+: Nedges)
 	{
-		ptr = NULL;
 		Nnodes = 0;
 		tid = omp_get_thread_num();
+
+		valid = false;
 		string label, param1, param2;	// Holds label and parameters
 		unsigned int n1, n2;			// Holds the value of nodes
 		float temp;
@@ -77,18 +70,17 @@ int main(int argc, char **argv){
 		{
 			nThreads = omp_get_num_threads();
 			cout << nThreads << " threads" << endl;
-			localhN = new headNode[nThreads];
 		}
 
-		hN = &localhN[tid];
-
 		while(in.good()){
-			bool valid = true;
 			stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
 
 #pragma omp critical		
 			{
-				if(in.good()) getline(in, line);			// Read file line by line
+				if(in.good()) {
+					getline(in, line);			// Read file line by line
+					valid = true;
+				}
 				else {
 					valid = false;
 				}
@@ -97,30 +89,21 @@ int main(int argc, char **argv){
 			if(valid){
 				ss << line;
 				char first = line[0];			// First character tells us what component it is
+				// Using string stream to convert line of data into components
+				ss >> label >> n1 >> n2 >> param1 >> param2;
 				switch(first){
 					case 'r':
 					case 'R':
 						// Adding resistor
-						// Using string stream to convert line of data into components
-						ss >> label >> n1 >> n2 >> param1;
-
-						// Creating new resistor object
-						resistor *newRes;
-						newRes = new resistor;
-						newRes->setParameters(convert(param1));
-						newRes->setNodes(n1, n2);
-						newRes->setLabel(label);
-
-						// Insert into headnode
-						hN->insert(newRes);
-						Nedges++;
-						ptr = (genericC *) newRes;
+						genPtr = new genericC;
+						genPtr->setParameters(convert(param1), resistor);
+						genPtr->setNodes(n1, n2);
+						genPtr->setLabel(label);
+						valid = true;
 						break;
 					case 'v':
 					case 'V':
 						// Add voltage supply
-						// Using string stream to convert line of data into components
-						ss >> label >> n1 >> n2 >> param1 >> param2;
 						if(param1 == "ac" || param1 == "AC") temp = 0;
 						else if (param1 == "dc" || param1 == "DC") temp = 1;
 						else {
@@ -128,23 +111,16 @@ int main(int argc, char **argv){
 							param2 = param1;
 						}
 
-						// Creating new voltageSource object
-						voltageSource *vsNew;
-						vsNew = new voltageSource;
-						vsNew->setParameters(atof(param2.c_str()), temp);
-						vsNew->setNodes(n1, n2);
-						vsNew->setLabel(label);
+						genPtr = new genericC;
+						genPtr->setParameters(atof(param2.c_str()), temp, voltageSrc);
+						genPtr->setNodes(n1, n2);
+						genPtr->setLabel(label);
 
-						// Insert into headNode
-						hN->insert(vsNew);
-						Nedges++;
-						ptr = (genericC *) vsNew;
+						valid = true;
 						break;
 					case 'i':
 					case 'I':
 						// Add current supply
-						// Using string stream to convert line of data into components
-						ss >> label >> n1 >> n2 >> param1 >> param2;
 						if(param1 == "ac" || param1 == "AC") temp = 0;
 						else if (param1 == "dc" || param1 == "DC") temp = 1;
 						else {
@@ -152,17 +128,12 @@ int main(int argc, char **argv){
 							param2 = param1;
 						}
 
-						// Creating new currentSource object
-						currentSource *iNew;
-						iNew = new currentSource;
-						iNew->setParameters(atof(param2.c_str()), temp);
-						iNew->setNodes(n1, n2);
-						iNew->setLabel(label);
+						genPtr = new genericC;
+						genPtr->setParameters(atof(param2.c_str()), temp, currentSrc);
+						genPtr->setNodes(n1, n2);
+						genPtr->setLabel(label);
 
-						// Insert into headNode
-						hN->insert(iNew);
-						Nedges++;		
-						ptr = (genericC *)iNew;
+						valid = true;
 						break;
 					case '.':
 						// Special case
@@ -174,28 +145,20 @@ int main(int argc, char **argv){
 				}
 
 				if(!valid) continue; 
-					
+
+				Nedges++;
+
 #pragma omp critical
-					{
+				{
 
-						if(n1 > Nnodes) Nnodes = n1;
-						if(n2 > Nnodes) Nnodes = n2;
-						if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-						// Insert into node list 
-						nodeList[n1].insertSrc(ptr);
-						nodeList[n2].insertSink(ptr);
-					}
+					if(n1 > Nnodes) Nnodes = n1;
+					if(n2 > Nnodes) Nnodes = n2;
+					// Insert into node list 
+					if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+					nodeList[n1].insertSrc(genPtr);
+					nodeList[n2].insertSink(genPtr);
 				}
-		}
-
-#pragma omp single
-		{
-			main = &localhN[0];
-			for(int i = 1; i < nThreads; i++)
-			{
-				main->merge(localhN[i]);
 			}
-
 		}
 #pragma omp critical
 		if(Nnodes > nodeTemp) nodeTemp = Nnodes;
@@ -212,7 +175,7 @@ int main(int argc, char **argv){
 		cout << "Size of nodelist is " << nLSize << endl << endl;
 		genericC *ptr;
 		int *node;
-		cout << "Sparse Adjacency Matrix with no connections eliminated. The printed format is: \n";
+		cout << "Sparse Adjacency Matrix with no connections eliminated - \n";
 		cout << "Current node: list of nodes connected as sinks | list of nodes connected as sources\n";
 		for (unsigned int i = 0; i < nLSize ; i++){
 			if(nodeList[i].getSrcList() == NULL && nodeList[i].getSinkList() == NULL) continue;
@@ -260,4 +223,5 @@ float convert(string res){
 	}
 	return output;
 }
+
 
