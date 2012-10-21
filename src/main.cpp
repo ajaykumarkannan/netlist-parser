@@ -32,11 +32,6 @@ int main(int argc, char **argv){
 
 	if(argc == 3) if (atoi(argv[2]) == 1) DEBUG = 1;
 
-	/* Headnode contains pointers to a linked list of each kind of structure
-	 * such as resistor, voltage source, capacitor, etc.
-	 */ 
-	headNode *hN;
-	hN = new headNode();
 	unsigned int Nedges = 0;			// Contains the number of edges/components
 	unsigned int Nnodes = 0;			// Contains the number of nodes
 	vector<node> nodeList (10);
@@ -50,8 +45,12 @@ int main(int argc, char **argv){
 		cerr << "Cannot open file for input.\n";
 		return -1;
 	}
-
+	
+	bool valid = false;
+	genericC *genPtr;
+	
 	while(in.good()){
+		valid = false;
 		string label, param1, param2;	// Holds label and parameters
 		unsigned int n1, n2;			// Holds the value of nodes
 		float temp;
@@ -60,66 +59,40 @@ int main(int argc, char **argv){
 		getline(in, line);			// Read file line by line
 		ss << line;
 		char first = line[0];			// First character tells us what component it is
+		
+		// Using string stream to convert line of data into components
+		ss >> label >> n1 >> n2 >> param1 >> param2;
+		
 		switch(first){
 			case 'r':
 			case 'R':
 				// Adding resistor
-				// Using string stream to convert line of data into components
-				ss >> label >> n1 >> n2 >> param1 ;
-
-				// Creating new resistor object
-				resistor *newRes;
-				newRes = new resistor;
-				newRes->setParameters(convert(param1));
-				newRes->setNodes(n1, n2);
-				newRes->setLabel(label);
-
-				// Insert into headnode
-				hN->insert(newRes);
-				Nedges++;
-				if(n1 > Nnodes) Nnodes = n1;
-				if(n2 > Nnodes) Nnodes = n2;
-
-				// Insert into node list 
-				if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-				nodeList[n1].insertSrc((genericC *) newRes);
-				nodeList[n2].insertSink((genericC *) newRes);
+				genPtr = new genericC;
+				genPtr->setParameters(convert(param1), resistor);
+				genPtr->setNodes(n1, n2);
+				genPtr->setLabel(label);
+				valid = true;
 				break;
 			case 'v':
 			case 'V':
 				// Add voltage supply
-				// Using string stream to convert line of data into components
-				ss >> label >> n1 >> n2 >> param1 >> param2;
 				if(param1 == "ac" || param1 == "AC") temp = 0;
 				else if (param1 == "dc" || param1 == "DC") temp = 1;
 				else {
 					temp = 1;
 					param2 = param1;
 				}
+				
+				genPtr = new genericC;
+				genPtr->setParameters(atof(param2.c_str()), temp, voltageSrc);
+				genPtr->setNodes(n1, n2);
+				genPtr->setLabel(label);
 
-				// Creating new voltageSource object
-				voltageSource *vsNew;
-				vsNew = new voltageSource;
-				vsNew->setParameters(atof(param2.c_str()), temp);
-				vsNew->setNodes(n1, n2);
-				vsNew->setLabel(label);
-
-				// Insert into headNode
-				hN->insert(vsNew);
-				Nedges++;
-				if(n1 > Nnodes) Nnodes = n1;
-				if(n2 > Nnodes) Nnodes = n2;
-
-				// Insert into node list 
-				if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-				nodeList[n1].insertSrc((genericC *) vsNew);
-				nodeList[n2].insertSink((genericC *) vsNew);
+				valid = true;
 				break;
 			case 'i':
 			case 'I':
 				// Add current supply
-				// Using string stream to convert line of data into components
-				ss >> label >> n1 >> n2 >> param1 >> param2;
 				if(param1 == "ac" || param1 == "AC") temp = 0;
 				else if (param1 == "dc" || param1 == "DC") temp = 1;
 				else {
@@ -127,29 +100,27 @@ int main(int argc, char **argv){
 					param2 = param1;
 				}
 
-				// Creating new currentSource object
-				currentSource *iNew;
-				iNew = new currentSource;
-				iNew->setParameters(atof(param2.c_str()), temp);
-				iNew->setNodes(n1, n2);
-				iNew->setLabel(label);
+				genPtr = new genericC;
+				genPtr->setParameters(atof(param2.c_str()), temp, currentSrc);
+				genPtr->setNodes(n1, n2);
+				genPtr->setLabel(label);
 
-				// Insert into headNode
-				hN->insert(iNew);
-				Nedges++;
-				if(n1 > Nnodes) Nnodes = n1;
-				if(n2 > Nnodes) Nnodes = n2;
-
-				// Insert into node list 
-				if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-				nodeList[n1].insertSrc((genericC *) iNew);
-				nodeList[n2].insertSink((genericC *) iNew);
+				valid = true;
 				break;
 			case '.':
 				// Special case
 				break;
 			default:
 				break;
+		}
+		if(valid){
+			Nedges++;
+			if(n1 > Nnodes) Nnodes = n1;
+			if(n2 > Nnodes) Nnodes = n2;
+			// Insert into node list 
+			if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+			nodeList[n1].insertSrc((genericC *) genPtr);
+			nodeList[n2].insertSink((genericC *) genPtr);
 		}
 	}
 
