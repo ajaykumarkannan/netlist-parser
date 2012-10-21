@@ -59,19 +59,11 @@ int main(int argc, char **argv){
 #pragma omp parallel private(genPtr, tid, line) shared(in, nThreads) reduction(+: Nedges)
 	{
 		Nnodes = 0;
-		tid = omp_get_thread_num();
-
 		valid = false;
 		string label, param1, param2;	// Holds label and parameters
 		unsigned int n1, n2;			// Holds the value of nodes
 		float temp;
-
-#pragma omp single
-		{
-			nThreads = omp_get_num_threads();
-			cout << nThreads << " threads" << endl;
-		}
-
+		int nTemp = 0;
 		while(in.good()){
 			stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
 
@@ -147,12 +139,21 @@ int main(int argc, char **argv){
 				if(!valid) continue; 
 
 				Nedges++;
-
+				if(n1 > n2){
+					if(n1 > Nnodes){
+						nTemp = n1;
+					}
+					else nTemp = Nnodes;
+				}
+				else{
+					if(n2 > Nnodes){
+						nTemp = n2;	
+					}
+					else nTemp = Nnodes;
+				}
 #pragma omp critical
 				{
-
-					if(n1 > Nnodes) Nnodes = n1;
-					if(n2 > Nnodes) Nnodes = n2;
+					Nnodes = nTemp;
 					// Insert into node list 
 					if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
 					nodeList[n1].insertSrc(genPtr);
