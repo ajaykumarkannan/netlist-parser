@@ -20,10 +20,17 @@
 
 using namespace std;
 
+// Global variables	
+vector<node> nodeList (10);
+
 /* This function is to convert a string value for resistance into
  * a float.
  */ 
 float convert(string res);
+
+/* This function is to merge two nodes
+ */
+void shortcircuit(int n1, int n2);
 
 int main(int argc, char **argv){
 	int DEBUG = 0;
@@ -37,7 +44,6 @@ int main(int argc, char **argv){
 	unsigned int Nedges = 0;			// Contains the number of edges/components
 	unsigned int Nnodes = 0;			// Contains the number of nodes
 	unsigned int nodeTemp;
-	vector<node> nodeList (10);
 
 	string line;			// Contains the current line processed
 	ifstream in; 			// ifstream to read file	
@@ -171,11 +177,13 @@ int main(int argc, char **argv){
 	Nnodes = Nnodes + 1;
 	cout << "Number of Nodes = " << Nnodes << ", Number of edges = " << Nedges << endl;
 
+	shortcircuit(0,1);
 	if(DEBUG){
 		unsigned int nLSize = nodeList.size();
 		cout << "Size of nodelist is " << nLSize << endl << endl;
 		genericC *ptr;
 		int *node;
+		gParam *params;
 		cout << "Sparse Adjacency Matrix with no connections eliminated - \n";
 		cout << "Current node: list of nodes connected as sinks | list of nodes connected as sources\n";
 		for (unsigned int i = 0; i < nLSize ; i++){
@@ -184,7 +192,8 @@ int main(int argc, char **argv){
 			ptr = nodeList[i].getSrcList();
 			while(ptr != NULL){
 				node = ptr->getNodes();
-				cout << node[1] << " "; 
+				params = ptr->getParameters();
+				cout << node[1] << ":" << params[0] << " "; 
 				ptr = ptr->getSrcNext();
 			}
 
@@ -193,7 +202,8 @@ int main(int argc, char **argv){
 
 			while(ptr != NULL){
 				node = ptr->getNodes();
-				cout << node[0] << " "; 
+				params = ptr->getParameters();
+				cout << node[0] << ":" << params[0] << " "; 
 				ptr = ptr->getSinkNext();
 			}
 			cout << endl;
@@ -225,4 +235,13 @@ float convert(string res){
 	return output;
 }
 
+void shortcircuit(int n1, int n2){
+	genericC *ptr = new genericC;
 
+	// Represents short circuit
+	ptr->setParameters(0, resistor);
+	ptr->setNodes(n1, n2);
+	ptr->setLabel("rsc");
+	nodeList[n1].insertSrc(ptr);
+	nodeList[n2].insertSink(ptr);
+}
