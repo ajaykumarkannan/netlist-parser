@@ -101,16 +101,22 @@ gParam *genericC::getParameters(){
 node::node(){
 	srcList = NULL;
 	sinkList = NULL;
+	omp_init_lock(&srcLock);
+	omp_init_lock(&sinkLock);
 }
 
 void node::insertSrc(genericC *ptr){
+	omp_set_lock(&srcLock);
 	if (srcList != NULL) ptr->srcInsert(srcList);
 	srcList = ptr;
+	omp_unset_lock(&srcLock);
 }
 
 void node::insertSink(genericC *ptr){
+	omp_set_lock(&sinkLock);
 	if(sinkList != NULL) ptr->sinkInsert(sinkList);
 	sinkList = ptr;
+	omp_unset_lock(&sinkLock);
 }
 
 void node::insert(genericC *src, genericC *sink){

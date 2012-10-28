@@ -1,5 +1,6 @@
 #define STRDEF
 #include <string>
+#include <omp.h>
 
 // This class is for a generic component. It is abstract.
 typedef float gParam;			
@@ -70,6 +71,10 @@ class genericC{
 class node{
 	genericC *srcList;
 	genericC *sinkList;
+
+	// Locks for the two linked list
+	omp_lock_t srcLock;
+	omp_lock_t sinkLock;
 	public:
 	node();
 	void insertSrc(genericC *ptr);

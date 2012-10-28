@@ -12,7 +12,6 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
-#include <omp.h>
 #include "../include/graph.hpp"
 #ifndef STRDEF
 #include <string>
@@ -32,16 +31,16 @@ class TestTimer
 	}
 
 		~TestTimer()
-		{
-			using namespace std;
-			using namespace boost;
+	{
+		using namespace std;
+		using namespace boost;
 
-			posix_time::ptime now(date_time::microsec_clock<posix_time::ptime>::local_time());
-			posix_time::time_duration d = now - start;
+		posix_time::ptime now(date_time::microsec_clock<posix_time::ptime>::local_time());
+		posix_time::time_duration d = now - start;
 
-			cout << name << " completed in " << d.total_milliseconds() / 1000.0 <<
-				" seconds" << endl;
-		}
+		cout << name << " completed in " << d.total_milliseconds() / 1000.0 <<
+			" seconds" << endl;
+	}
 
 	private:
 		std::string name;
@@ -61,7 +60,7 @@ vector<node> nodeList (100);
 float convert(string res);
 
 /* This function is to merge two nodes
-*/
+ */
 void shortcircuit(int n1, int n2);
 
 int main(int argc, char **argv){
@@ -113,7 +112,7 @@ int main(int argc, char **argv){
 		return -1;
 	}
 
-	int tid; 				// Thread id
+	// int tid; 				// Thread id
 	int nThreads;				// Number of threads
 	bool valid = false;
 	genericC *genPtr;
@@ -122,7 +121,7 @@ int main(int argc, char **argv){
 
 	{
 		TestTimer t("Data structure population");
-#pragma omp parallel private(genPtr, tid, line) shared(in, nThreads) reduction(+: Nedges)
+#pragma omp parallel private(genPtr, line, Nnodes) shared(in, nThreads) reduction(+: Nedges)
 		{
 			Nnodes = 0;
 			valid = false;
@@ -222,15 +221,16 @@ int main(int argc, char **argv){
 						}
 						else nTemp = Nnodes;
 					}
-#pragma omp critical
-					{
-						Nnodes = nTemp;
-						// Insert into node list 
-						if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-						nodeList[n1].insertSrc(genPtr);
-						nodeList[n2].insertSink(genPtr);
 
+					Nnodes = nTemp;
+					if(nodeList.size() < Nnodes) {
+						// Increase size of nodeList if required
+#pragma omp critical
+						nodeList.resize(Nnodes*2);
 					}
+					// Insert into node list 
+					nodeList[n1].insertSrc(genPtr);
+					nodeList[n2].insertSink(genPtr);
 				}
 			}
 #pragma omp critical
@@ -249,7 +249,7 @@ int main(int argc, char **argv){
 		cout << "Size of nodelist is " << nLSize << endl << endl;
 		genericC *ptr;
 		int *node;
-		gParam *params;
+		// gParam *params;
 		cout << "Sparse Adjacency Matrix with no connections eliminated - \n";
 		cout << "Current node: list of nodes connected as sinks | list of nodes connected as sources\n";
 		for (unsigned int i = 0; i < nLSize ; i++){
@@ -258,8 +258,8 @@ int main(int argc, char **argv){
 			ptr = nodeList[i].getSrcList();
 			while(ptr != NULL){
 				node = ptr->getNodes();
-				params = ptr->getParameters();
-				cout << node[1] << ":" << params[0] << " "; 
+				// params = ptr->getParameters();
+				cout << node[1] << ":" << " " ; // params[0] << " "; 
 				ptr = ptr->getSrcNext();
 			}
 
@@ -268,8 +268,8 @@ int main(int argc, char **argv){
 
 			while(ptr != NULL){
 				node = ptr->getNodes();
-				params = ptr->getParameters();
-				cout << node[0] << ":" << params[0] << " "; 
+				// params = ptr->getParameters();
+				cout << node[0] << ":" << " "; // params[0] << " "; 
 				ptr = ptr->getSinkNext();
 			}
 			cout << endl;
