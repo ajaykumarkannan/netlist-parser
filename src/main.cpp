@@ -7,6 +7,7 @@
  ***************************************************************/ 
 
 #include <iostream>
+#include <deque>
 #include <vector>
 #include <fstream>
 #include <sstream>
@@ -16,12 +17,43 @@
 #ifndef STRDEF
 #include <string>
 #endif
-#define m_iUseableProcessors	1
+#define m_iUseableProcessors	2
+#define DEFAULTSIZE		100
+
+#include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/date_time/microsec_time_clock.hpp>
+
+class TestTimer
+{
+	public:
+		TestTimer(const std::string & name) : name(name),
+		start(boost::date_time::microsec_clock<boost::posix_time::ptime>::local_time())
+	{
+	}
+
+		~TestTimer()
+		{
+			using namespace std;
+			using namespace boost;
+
+			posix_time::ptime now(date_time::microsec_clock<posix_time::ptime>::local_time());
+			posix_time::time_duration d = now - start;
+
+			cout << name << " completed in " << d.total_milliseconds() / 1000.0 <<
+				" seconds" << endl;
+		}
+
+	private:
+		std::string name;
+		boost::posix_time::ptime start;
+};
 
 using namespace std;
 
 // Global variables	
-vector<node> nodeList (10);
+vector<node> nodeList (100);
+// deque<node> nodeList (100);
+// node *nodeList;
 
 /* This function is to convert a string value for resistance into
  * a float.
@@ -29,21 +61,47 @@ vector<node> nodeList (10);
 float convert(string res);
 
 /* This function is to merge two nodes
- */
+*/
 void shortcircuit(int n1, int n2);
 
 int main(int argc, char **argv){
+	cout << &nodeList[0] << endl;
+
 	int DEBUG = 0;
 	if(argc < 2) {
-		cout << "Usage: ./main.out filename" << endl;
+		cout << "Usage: ./main.out filename (number of nodes - Optional)" << endl;
 		return -2;
 	}
 
-	if(argc == 3) if (atoi(argv[2]) == 1) DEBUG = 1;
+	if(argc == 3) {
+		if (atoi(argv[2]) == 1) {
+			DEBUG = 1;
+			nodeList.reserve(DEFAULTSIZE);
+			// nodeList = new node[DEFAULTSIZE];
+		}
+		else if(atoi(argv[2]) > 1) {
+			// nodeList = new node[atoi(argv[2])]; 
+			nodeList.reserve(atoi(argv[2]));
+		}
+	} else if (argc == 4) {
+		if (atoi(argv[2]) == 1) DEBUG = 1;
+		if(atoi(argv[3]) > 1){
+			// nodeList = new node[atoi(argv[3])];
+			nodeList.reserve(atoi(argv[3]));
+		}
+		else {
+			//nodeList = new node[DEFAULTSIZE];
+			nodeList.reserve(DEFAULTSIZE);
+		}
+	} else {
+		nodeList.reserve(DEFAULTSIZE);
+		// nodeList = new node[DEFAULTSIZE];
+	}
+	cout << &nodeList[0] << endl;
 
 	unsigned int Nedges = 0;			// Contains the number of edges/components
 	unsigned int Nnodes = 0;			// Contains the number of nodes
-	unsigned int nodeTemp;
+	unsigned int nodeTemp = 0;
 
 	string line;			// Contains the current line processed
 	ifstream in; 			// ifstream to read file	
@@ -60,124 +118,132 @@ int main(int argc, char **argv){
 	bool valid = false;
 	genericC *genPtr;
 
-	// omp_set_num_threads(m_iUseableProcessors);
+	omp_set_num_threads(m_iUseableProcessors);
 
-#pragma omp parallel private(genPtr, tid, line) shared(in, nThreads) reduction(+: Nedges)
 	{
-		Nnodes = 0;
-		valid = false;
-		string label, param1, param2;	// Holds label and parameters
-		unsigned int n1, n2;			// Holds the value of nodes
-		float temp;
-		int nTemp = 0;
-		while(in.good()){
-			stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
+		TestTimer t("Data structure population");
+#pragma omp parallel private(genPtr, tid, line) shared(in, nThreads) reduction(+: Nedges)
+		{
+			Nnodes = 0;
+			valid = false;
+			string label, param1, param2;	// Holds label and parameters
+			unsigned int n1, n2;			// Holds the value of nodes
+			float temp;
+			int nTemp = 0;
+#pragma omp master
+			{
+				nThreads = omp_get_num_threads();
+				cout << nThreads << " threads\n";
+			}
+			while(in.good()){
+				stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
 
 #pragma omp critical		
-			{
-				if(in.good()) {
-					getline(in, line);			// Read file line by line
-					valid = true;
-				}
-				else {
-					valid = false;
-				}
-			}
-
-			if(valid){
-				ss << line;
-				char first = line[0];			// First character tells us what component it is
-				// Using string stream to convert line of data into components
-				ss >> label >> n1 >> n2 >> param1 >> param2;
-				switch(first){
-					case 'r':
-					case 'R':
-						// Adding resistor
-						genPtr = new genericC;
-						genPtr->setParameters(convert(param1), resistor);
-						genPtr->setNodes(n1, n2);
-						genPtr->setLabel(label);
-						valid = true;
-						break;
-					case 'v':
-					case 'V':
-						// Add voltage supply
-						if(param1 == "ac" || param1 == "AC") temp = 0;
-						else if (param1 == "dc" || param1 == "DC") temp = 1;
-						else {
-							temp = 1;
-							param2 = param1;
-						}
-
-						genPtr = new genericC;
-						genPtr->setParameters(atof(param2.c_str()), temp, voltageSrc);
-						genPtr->setNodes(n1, n2);
-						genPtr->setLabel(label);
-
-						valid = true;
-						break;
-					case 'i':
-					case 'I':
-						// Add current supply
-						if(param1 == "ac" || param1 == "AC") temp = 0;
-						else if (param1 == "dc" || param1 == "DC") temp = 1;
-						else {
-							temp = 1;
-							param2 = param1;
-						}
-
-						genPtr = new genericC;
-						genPtr->setParameters(atof(param2.c_str()), temp, currentSrc);
-						genPtr->setNodes(n1, n2);
-						genPtr->setLabel(label);
-
-						valid = true;
-						break;
-					case '.':
-						// Special case
-						valid = false;
-						break;
-					default:
-						valid = false;
-						break;
-				}
-
-				if(!valid) continue; 
-
-				Nedges++;
-				if(n1 > n2){
-					if(n1 > Nnodes){
-						nTemp = n1;
-					}
-					else nTemp = Nnodes;
-				}
-				else{
-					if(n2 > Nnodes){
-						nTemp = n2;	
-					}
-					else nTemp = Nnodes;
-				}
-#pragma omp critical
 				{
-					Nnodes = nTemp;
-					// Insert into node list 
-					if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
-					nodeList[n1].insertSrc(genPtr);
-					nodeList[n2].insertSink(genPtr);
+					if(in.good()) {
+						getline(in, line);			// Read file line by line
+						valid = true;
+					}
+					else {
+						valid = false;
+					}
+				}
+
+				if(valid){
+					ss << line;
+					char first = line[0];			// First character tells us what component it is
+					// Using string stream to convert line of data into components
+					ss >> label >> n1 >> n2 >> param1 >> param2;
+					switch(first){
+						case 'r':
+						case 'R':
+							// Adding resistor
+							genPtr = new genericC;
+							genPtr->setParameters(convert(param1), resistor);
+							genPtr->setNodes(n1, n2);
+							genPtr->setLabel(label);
+							valid = true;
+							break;
+						case 'v':
+						case 'V':
+							// Add voltage supply
+							if(param1 == "ac" || param1 == "AC") temp = 0;
+							else if (param1 == "dc" || param1 == "DC") temp = 1;
+							else {
+								temp = 1;
+								param2 = param1;
+							}
+
+							genPtr = new genericC;
+							genPtr->setParameters(atof(param2.c_str()), temp, voltageSrc);
+							genPtr->setNodes(n1, n2);
+							genPtr->setLabel(label);
+
+							valid = true;
+							break;
+						case 'i':
+						case 'I':
+							// Add current supply
+							if(param1 == "ac" || param1 == "AC") temp = 0;
+							else if (param1 == "dc" || param1 == "DC") temp = 1;
+							else {
+								temp = 1;
+								param2 = param1;
+							}
+
+							genPtr = new genericC;
+							genPtr->setParameters(atof(param2.c_str()), temp, currentSrc);
+							genPtr->setNodes(n1, n2);
+							genPtr->setLabel(label);
+
+							valid = true;
+							break;
+						case '.':
+							// Special case
+							valid = false;
+							break;
+						default:
+							valid = false;
+							break;
+					}
+
+					if(!valid) continue; 
+
+					Nedges++;
+					if(n1 > n2){
+						if(n1 > Nnodes){
+							nTemp = n1;
+						}
+						else nTemp = Nnodes;
+					}
+					else{
+						if(n2 > Nnodes){
+							nTemp = n2;	
+						}
+						else nTemp = Nnodes;
+					}
+#pragma omp critical
+					{
+						Nnodes = nTemp;
+						// Insert into node list 
+						if(nodeList.size() < Nnodes) nodeList.resize(Nnodes*2);
+						nodeList[n1].insertSrc(genPtr);
+						nodeList[n2].insertSink(genPtr);
+
+					}
 				}
 			}
-		}
 #pragma omp critical
-		if(Nnodes > nodeTemp) nodeTemp = Nnodes;
+			if(Nnodes > nodeTemp) nodeTemp = Nnodes;
 
+		}
 	}
-
 	Nnodes = nodeTemp;
 	cout << "Done parsing\n";
 	Nnodes = Nnodes + 1;
 	cout << "Number of Nodes = " << Nnodes << ", Number of edges = " << Nedges << endl;
 
-	shortcircuit(0,1);
+	//	shortcircuit(0,1);
 	if(DEBUG){
 		unsigned int nLSize = nodeList.size();
 		cout << "Size of nodelist is " << nLSize << endl << endl;
@@ -209,7 +275,7 @@ int main(int argc, char **argv){
 			cout << endl;
 		}
 	}	
-
+	cout << &nodeList[0] << endl;
 	in.close();
 	return 0;
 }
