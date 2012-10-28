@@ -27,7 +27,7 @@ genericC::genericC(gParam a, gParam b, CompType in, int n1, int n2, int n3){
 };
 
 genericC::~genericC(){
-	
+
 };
 
 void genericC::setNodes(int n1, int n2, int n3){
@@ -93,7 +93,7 @@ gParam *genericC::getParameters(){
 		out[0] = param0;
 		out[1] = param1;
 	}
-	
+
 	return out;
 }
 
