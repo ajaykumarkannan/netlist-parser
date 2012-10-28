@@ -64,9 +64,8 @@ float convert(string res);
 void shortcircuit(int n1, int n2);
 
 int main(int argc, char **argv){
-	cout << &nodeList[0] << endl;
 
-	int DEBUG = 0;
+	int DEBUG = 0;		// Debug flag
 	if(argc < 2) {
 		cout << "Usage: ./main.out filename (number of nodes - Optional)" << endl;
 		return -2;
@@ -96,33 +95,38 @@ int main(int argc, char **argv){
 		nodeList.reserve(DEFAULTSIZE);
 		// nodeList = new node[DEFAULTSIZE];
 	}
-	cout << &nodeList[0] << endl;
 
 	unsigned int Nedges = 0;			// Contains the number of edges/components
 	unsigned int Nnodes = 0;			// Contains the number of nodes
 	unsigned int nodeTemp = 0;
 
 	string line;			// Contains the current line processed
-	ifstream in; 			// ifstream to read file	
-
+	ifstream *in; 			// ifstream to read file	
+/*
 	// Open the desired file
 	in.open(argv[1]);
 	if(!in){
 		cerr << "Cannot open file for input.\n";
 		return -1;
 	}
-
-	// int tid; 				// Thread id
+*/
+	
+	int tid; 				// Thread id
 	int nThreads;				// Number of threads
 	bool valid = false;
 	genericC *genPtr;
 
 	omp_set_num_threads(m_iUseableProcessors);
 
+	ifstream afile[2];
+	afile[0].open("xaa");
+	afile[1].open("xbb");
+	
 	{
 		TestTimer t("Data structure population");
-#pragma omp parallel private(genPtr, line, Nnodes) shared(in, nThreads) reduction(+: Nedges)
+#pragma omp parallel private(genPtr, line, Nnodes, in, tid) shared(nThreads) reduction(+: Nedges)
 		{
+			tid = omp_get_thread_num();
 			Nnodes = 0;
 			valid = false;
 			string label, param1, param2;	// Holds label and parameters
@@ -134,19 +138,21 @@ int main(int argc, char **argv){
 				nThreads = omp_get_num_threads();
 				cout << nThreads << " threads\n";
 			}
-			while(in.good()){
-				stringstream ss (stringstream::in | stringstream::out);			// Used to process the string
 
-#pragma omp critical		
-				{
-					if(in.good()) {
-						getline(in, line);			// Read file line by line
+#pragma omp critical
+			cout << tid << endl;			
+
+			in = &afile[tid];
+			while(in->good()){
+				stringstream ss (stringstream::in | stringstream::out);			// Used to process the string		
+				
+					if(in->good()) {
+						getline(*in, line);			// Read file line by line
 						valid = true;
 					}
 					else {
 						valid = false;
-					}
-				}
+					}			
 
 				if(valid){
 					ss << line;
@@ -276,7 +282,9 @@ int main(int argc, char **argv){
 		}
 	}	
 	cout << &nodeList[0] << endl;
-	in.close();
+	// in->close();
+	afile[0].close();
+	afile[1].close();
 	return 0;
 }
 
