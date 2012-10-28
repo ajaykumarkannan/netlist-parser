@@ -101,7 +101,7 @@ int main(int argc, char **argv){
 	unsigned int nodeTemp = 0;
 
 	string line;			// Contains the current line processed
-	
+
 	/*
 	 // Open the desired file
 	 in.open(argv[1]);
@@ -126,7 +126,7 @@ int main(int argc, char **argv){
 		nlines++;
 		getline(afile[0], line);
 	}
-	
+
 	afile[0].close();
 
 	for (int i = 0; i < m_iUseableProcessors; i += 1){
@@ -138,7 +138,7 @@ int main(int argc, char **argv){
 
 	int incr = nlines / m_iUseableProcessors;
 	int curr = 0;
-	
+
 	for (int i = 0; i < m_iUseableProcessors; i += 1){
 		top[i] = curr;
 		bottom[i] = curr + incr;
@@ -150,10 +150,17 @@ int main(int argc, char **argv){
 		cout << bottom[i] << endl;
 	}
 
+
 	{
 		TestTimer t("Data structure population");
 #pragma omp parallel private(genPtr, line, Nnodes, tid) shared(nThreads) reduction(+: Nedges)
 		{
+			
+#pragma omp master
+			{
+				nThreads = omp_get_num_threads();
+				cout << nThreads << " threads\n";
+			}
 			int count = 0;
 			tid = omp_get_thread_num();
 			Nnodes = 0;
@@ -161,13 +168,7 @@ int main(int argc, char **argv){
 			string label, param1, param2;	// Holds label and parameters
 			unsigned int n1, n2;			// Holds the value of nodes
 			float temp;
-			int nTemp = 0;
-			
-#pragma omp master
-			{
-				nThreads = omp_get_num_threads();
-				cout << nThreads << " threads\n";
-			}
+			int nTemp = 0;			
 
 			while(afile[tid].good()){
 				count++;
@@ -307,9 +308,9 @@ int main(int argc, char **argv){
 			cout << endl;
 		}
 	}	
-	
+
 	for(int i = 0; i < m_iUseableProcessors; i++){ 
-	afile[i].close();
+		afile[i].close();
 	}
 	return 0;
 }
