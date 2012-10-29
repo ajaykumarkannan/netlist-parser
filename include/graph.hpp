@@ -16,7 +16,7 @@ enum CompType{
  */ 
 
 class genericC{
-	protected:
+	private:
 		genericC *srcNext;
 		genericC *sinkNext;
 
