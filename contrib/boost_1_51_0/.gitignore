@@ -1,0 +1,5 @@
+# Ignore everything in this directory
+*
+# Except these files
+!.gitignore
+!EXTRACT_BOOST_HERE
