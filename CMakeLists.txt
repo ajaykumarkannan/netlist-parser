@@ -27,7 +27,7 @@ include_directories( "contrib/boost_1_51_0" )
 # List headers in IDE workspace for convenience
 file( GLOB_RECURSE ALL_INCLUDE "include/*" )
 
-add_executable( netlist-parser ${ALL_INCLUDE} src/main.cpp src/graph.cpp )
+add_executable( main.out ${ALL_INCLUDE} src/main.cpp src/graph.cpp )
 
 # Add linker dependencied here
 #target_link_libraries( find-community -lpthread )
